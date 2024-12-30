@@ -1,6 +1,10 @@
 use std::str::FromStr;
+mod api;
+mod error;
+mod routes;
 mod todo;
 
+use routes::create_router;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use tracing::level_filters::LevelFilter;
 //use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -41,9 +45,10 @@ async fn init_dbpool() -> Result<sqlx::Pool<sqlx::Sqlite>, sqlx::Error> {
 async fn main() {
     init_tracing();
     let dbpool = init_dbpool().await.expect("Failed to create pool");
-    //let router = create_router(dbpool).await;
+    let router = create_router(dbpool).await;
 
-    //let bind_addr = std::env::var("BIND_ADDR").unwrap_or_else(|_| "127.0.0.1:3000".to_string());
+    let bind_addr = std::env::var("BIND_ADDR").unwrap_or_else(|_| "127.0.0.1:3000".to_string());
 
-    //axum::Server::bind(&bind_addr.parse().unwrap()) .serve(router.into_make_service()) .await .expect("unable to start server")
+    let listener = tokio::net::TcpListener::bind(bind_addr).await.unwrap();
+    axum::serve(listener, router).await.unwrap();
 }
